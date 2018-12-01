@@ -13,3 +13,8 @@ type Image struct {
 type SHAResult struct {
 	Status string
 }
+
+type AnchoreConfig struct {
+	EndpointURL string `yaml:"ANCHORE_CLI_URL"`
+	Token       string `yaml:"ANCHORE_CLI_TOKEN"`
+}

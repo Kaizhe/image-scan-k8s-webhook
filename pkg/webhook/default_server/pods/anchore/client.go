@@ -6,9 +6,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/golang/glog"
+	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"reflect"
 	"strings"
 	"time"
@@ -22,12 +22,27 @@ var (
 	client = &http.Client{
 		Transport: transCfg,
 	}
+
+	anchoreConfig AnchoreConfig
+
+	anchoreConfigFile = "/tmp/sysdig-token/config.yaml"
 )
 
+func init() {
+	yamlFile, err := ioutil.ReadFile(anchoreConfigFile)
+	if err != nil {
+		glog.Errorf("yamlFile.Get err   #%v ", err)
+	}
+	err = yaml.Unmarshal(yamlFile, &anchoreConfig)
+	if err != nil {
+		glog.Fatalf("Unmarshal: %v", err)
+	}
+}
+
 func anchoreRequest(path string, bodyParams map[string]string, method string) ([]byte, error) {
-	username := os.Getenv("ANCHORE_CLI_USER")
-	password := os.Getenv("ANCHORE_CLI_PASS")
-	anchoreEngineURL := os.Getenv("ANCHORE_CLI_URL")
+	username := anchoreConfig.Token
+	password := ""
+	anchoreEngineURL := anchoreConfig.EndpointURL
 	fullURL := anchoreEngineURL + path
 
 	bodyParamJson, err := json.Marshal(bodyParams)
