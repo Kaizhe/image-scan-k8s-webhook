@@ -139,7 +139,7 @@ func waitForImageLoaded(image string) (digest string, err error) {
 	digest, err = getImageDigest(image)
 	for err != nil && count < 30 {
 		digest, err = getImageDigest(image)
-		time.Sleep(time.Second)
+		time.Sleep(time.Second * 5)
 		count++
 	}
 	return
