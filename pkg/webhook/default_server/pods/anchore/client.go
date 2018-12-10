@@ -137,7 +137,7 @@ func waitForImageLoaded(image string) (digest string, err error) {
 	}
 	count := 0
 	digest, err = getImageDigest(image)
-	for err != nil && count < 30 {
+	for err != nil && count < 60 {
 		digest, err = getImageDigest(image)
 		time.Sleep(time.Second * 5)
 		count++
