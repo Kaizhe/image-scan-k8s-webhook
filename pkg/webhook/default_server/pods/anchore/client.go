@@ -26,6 +26,8 @@ var (
 	anchoreConfig AnchoreConfig
 
 	anchoreConfigFile = "/tmp/sysdig-token/config.yaml"
+
+	errNotFound = "response from Anchore: 404"
 )
 
 func init() {
@@ -61,7 +63,7 @@ func anchoreRequest(path string, bodyParams map[string]string, method string) ([
 	}
 
 	bodyText, err := ioutil.ReadAll(resp.Body)
-	//	glog.Info("Anchore Response Body: " + string(bodyText))
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to complete request to Anchore: %v", err)
 	}
@@ -74,11 +76,26 @@ func anchoreRequest(path string, bodyParams map[string]string, method string) ([
 func getStatus(digest string, tag string) bool {
 	path := fmt.Sprintf("/images/%s/check?tag=%s&history=false&detail=false", digest, tag)
 	body, err := anchoreRequest(path, nil, "GET")
+
+	count := 0
+
+	// wait for image analyzing
+	for err != nil && err.Error() == errNotFound && count < 60 {
+		body, err = anchoreRequest(path, nil, "GET")
+		if err == nil {
+			break
+		}
+		time.Sleep(time.Second * 5)
+		count++
+	}
+
 	if err != nil {
 		glog.Error(err)
 		return false
 	}
-	fmt.Println("Anchore Response Body: " + string(body))
+
+	glog.Info("Anchore Response Body: " + string(body))
+
 	var result []map[string]map[string][]SHAResult
 	err = json.Unmarshal(body, &result)
 	if err != nil {
