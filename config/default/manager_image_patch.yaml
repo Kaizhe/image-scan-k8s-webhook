@@ -8,5 +8,5 @@ spec:
     spec:
       containers:
       # Change the value of image field below to your controller image URL
-      - image: kaizheh/sysdig-image-scanning-trigger
+      - image: quay.io/sysdig/sysdig-image-scanning-trigger
         name: manager

@@ -19,7 +19,7 @@ package validating
 import (
 	"context"
 	"fmt"
-	"github.com/golang/glog"
+	"github.com/sirupsen/logrus"
 	"image-scan-k8s-webhook/pkg/webhook/default_server/pods/anchore"
 	"net/http"
 
@@ -29,7 +29,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission/types"
 )
 
+var (
+	log = logrus.New()
+)
+
 func init() {
+	log.SetFormatter(&logrus.JSONFormatter{})
+
 	webhookName := "validating-create-pods"
 	if HandlerMap[webhookName] == nil {
 		HandlerMap[webhookName] = []admission.Handler{}
@@ -52,14 +58,14 @@ func (h *PodCreateHandler) validatingPodFn(ctx context.Context, obj *corev1.Pod)
 
 	for _, container := range obj.Spec.Containers {
 		image := container.Image
-		glog.Info("Checking image: " + image)
+		log.Info("Checking image: " + image)
 		if !anchore.CheckImage(image) {
 			allowed = false
 			msg = fmt.Sprintf("Image failed policy check: %s", image)
-			glog.Warning(msg)
+			log.Warning(msg)
 			return allowed, msg, nil
 		} else {
-			glog.Info("Image passed policy check: " + image)
+			log.Info("Image passed policy check: " + image)
 		}
 	}
 

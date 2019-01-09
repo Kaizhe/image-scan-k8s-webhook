@@ -5,7 +5,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"github.com/golang/glog"
+	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"net/http"
@@ -28,16 +28,21 @@ var (
 	anchoreConfigFile = "/tmp/sysdig-token/config.yaml"
 
 	errNotFound = "response from Anchore: 404"
+
+	log = logrus.New()
 )
 
 func init() {
+
+	log.SetFormatter(&logrus.JSONFormatter{})
+
 	yamlFile, err := ioutil.ReadFile(anchoreConfigFile)
 	if err != nil {
-		glog.Errorf("yamlFile.Get err   #%v ", err)
+		log.Errorf("yamlFile.Get err   #%v ", err)
 	}
 	err = yaml.Unmarshal(yamlFile, &anchoreConfig)
 	if err != nil {
-		glog.Fatalf("Unmarshal: %v", err)
+		log.Fatalf("Unmarshal: %v", err)
 	}
 }
 
@@ -50,10 +55,10 @@ func anchoreRequest(path string, bodyParams map[string]string, method string) ([
 	bodyParamJson, err := json.Marshal(bodyParams)
 	req, err := http.NewRequest(method, fullURL, bytes.NewBuffer(bodyParamJson))
 	if err != nil {
-		glog.Fatal(err)
+		log.Fatal(err)
 	}
 	req.SetBasicAuth(username, password)
-	glog.Infof("Sending request to %s, with params %s", fullURL, bodyParams)
+	log.Infof("Sending request to %s, with params %s", fullURL, bodyParams)
 	req.Header.Add("Content-Type", "application/json")
 
 	resp, err := client.Do(req)
@@ -80,7 +85,7 @@ func getStatus(digest string, tag string) bool {
 	count := 0
 
 	// wait for image analyzing
-	for err != nil && err.Error() == errNotFound && count < 60 {
+	for err != nil && err.Error() == errNotFound && count < 180 {
 		body, err = anchoreRequest(path, nil, "GET")
 		if err == nil {
 			break
@@ -90,16 +95,20 @@ func getStatus(digest string, tag string) bool {
 	}
 
 	if err != nil {
-		glog.Error(err)
+		log.Error(err)
 		return false
 	}
 
-	glog.Info("Anchore Response Body: " + string(body))
+	ret := string(body)
+	ret = strings.Replace(ret, "\n", "", -1)
+	ret = strings.Replace(ret, "\t", "", -1)
+
+	log.Infof("Anchore Response Body: %s", ret)
 
 	var result []map[string]map[string][]SHAResult
 	err = json.Unmarshal(body, &result)
 	if err != nil {
-		glog.Error(err)
+		log.Error(err)
 		return false
 	}
 
@@ -126,7 +135,7 @@ func getImage(imageRef string) (Image, error) {
 
 	body, err := anchoreRequest("/images", params, "GET")
 	if err != nil {
-		glog.Error(err)
+		log.Error(err)
 		return Image{}, err
 	}
 
@@ -168,14 +177,14 @@ func addImage(image string) error {
 	if err != nil {
 		return err
 	}
-	glog.Infof("Added image to Anchore Engine: %s", image)
+	log.Infof("Added image to Anchore Engine: %s", image)
 	return nil
 }
 
 func CheckImage(image string) bool {
 	digest, err := waitForImageLoaded(image)
 	if err != nil {
-		glog.Error(err)
+		log.Error(err)
 		return false
 	}
 	return getStatus(digest, image)
