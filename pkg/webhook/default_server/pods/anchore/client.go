@@ -85,13 +85,22 @@ func getStatus(digest string, tag string) bool {
 	count := 0
 
 	// wait for image analyzing
-	for err != nil && err.Error() == errNotFound && count < 180 {
+	for err != nil && err.Error() == errNotFound && count < 3 {
 		body, err = anchoreRequest(path, nil, "GET")
 		if err == nil {
 			break
 		}
 		time.Sleep(time.Second * 5)
 		count++
+	}
+
+	// @todo: there is 30 sec limit for admission controller to reponse to the k8s api-server,
+	// @todo: when the limit is removed, should be able to wait till the image scanned completed
+	// @todo: a temp solution is return true when the image is not scanned for the first time
+	if err != nil && err.Error() == errNotFound && count == 3 {
+		// first time scanned image, return true
+		log.Warnf("image %s with tag %s has not been scanned.", digest, tag)
+		return true
 	}
 
 	if err != nil {
@@ -163,9 +172,9 @@ func waitForImageLoaded(image string) (digest string, err error) {
 	}
 	count := 0
 	digest, err = getImageDigest(image)
-	for err != nil && count < 60 {
+	for err != nil && count < 5 {
 		digest, err = getImageDigest(image)
-		time.Sleep(time.Second * 5)
+		time.Sleep(time.Second)
 		count++
 	}
 	return
