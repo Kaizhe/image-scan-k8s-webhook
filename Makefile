@@ -1,6 +1,7 @@
 
 # Image URL to use all building/pushing image targets
-IMG ?= controller:latest
+IMG ?= docker.io/sysdig/sysdig-image-scanning-trigger
+VERSION := $(shell cat version)
 
 all: test manager
 
@@ -43,10 +44,14 @@ generate:
 
 # Build the docker image
 docker-build: test
-	docker build . -t ${IMG}
+	docker build . -t ${IMG}:${VERSION}
 	@echo "updating kustomize image patch file for manager resource"
 	sed -i'' -e 's@image: .*@image: '"${IMG}"'@' ./config/default/manager_image_patch.yaml
 
 # Push the docker image
 docker-push:
-	docker push ${IMG}
+	docker push ${IMG}:${VERSION}
+
+# delete images
+delete-images:
+	docker image rm -f ${IMG}:${VERSION}

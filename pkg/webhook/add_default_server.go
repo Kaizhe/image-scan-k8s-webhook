@@ -17,7 +17,7 @@ limitations under the License.
 package webhook
 
 import (
-	server "image-scan-k8s-webhook/pkg/webhook/default_server"
+	server "github.com/draios/internal-sysdig-labs/image-scan-k8s-webhook/pkg/webhook/default_server"
 )
 
 func init() {

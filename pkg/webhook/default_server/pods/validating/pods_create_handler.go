@@ -19,9 +19,10 @@ package validating
 import (
 	"context"
 	"fmt"
-	"github.com/sirupsen/logrus"
-	"image-scan-k8s-webhook/pkg/webhook/default_server/pods/anchore"
 	"net/http"
+
+	"github.com/draios/internal-sysdig-labs/image-scan-k8s-webhook/pkg/webhook/default_server/pods/anchore"
+	"github.com/sirupsen/logrus"
 
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/runtime/inject"

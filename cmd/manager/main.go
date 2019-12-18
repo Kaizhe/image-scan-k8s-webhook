@@ -19,9 +19,9 @@ package main
 import (
 	"os"
 
-	"image-scan-k8s-webhook/pkg/apis"
-	"image-scan-k8s-webhook/pkg/controller"
-	"image-scan-k8s-webhook/pkg/webhook"
+	"github.com/draios/internal-sysdig-labs/image-scan-k8s-webhook/pkg/apis"
+	"github.com/draios/internal-sysdig-labs/image-scan-k8s-webhook/pkg/controller"
+	"github.com/draios/internal-sysdig-labs/image-scan-k8s-webhook/pkg/webhook"
 
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"

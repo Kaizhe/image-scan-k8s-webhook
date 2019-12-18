@@ -19,7 +19,7 @@ package defaultserver
 import (
 	"fmt"
 
-	"image-scan-k8s-webhook/pkg/webhook/default_server/pods/validating"
+	"github.com/draios/internal-sysdig-labs/image-scan-k8s-webhook/pkg/webhook/default_server/pods/validating"
 )
 
 func init() {
