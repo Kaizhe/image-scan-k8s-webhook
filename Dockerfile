@@ -3,9 +3,8 @@ FROM golang:1.12.3 as builder
 
 # Copy in the go src
 WORKDIR /go/src/github.com/draios/internal-sysdig-labs/image-scan-k8s-webhook
-COPY pkg/    pkg/
-COPY cmd/    cmd/
-COPY vendor/ vendor/
+COPY . /go/src/github.com/draios/internal-sysdig-labs/image-scan-k8s-webhook
+RUN make test
 
 # Build
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o manager /go/src/github.com/draios/internal-sysdig-labs/image-scan-k8s-webhook/cmd/manager
