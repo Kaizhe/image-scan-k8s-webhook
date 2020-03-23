@@ -17,4 +17,6 @@ type SHAResult struct {
 type AnchoreConfig struct {
 	EndpointURL string `yaml:"ANCHORE_CLI_URL"`
 	Token       string `yaml:"ANCHORE_CLI_TOKEN"`
+	User        string `yaml:"ANCHORE_CLI_USER"`
+	Password    string `yaml:"ANCHORE_CLI_PASS"`
 }

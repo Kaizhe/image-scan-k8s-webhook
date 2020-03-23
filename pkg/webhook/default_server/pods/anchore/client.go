@@ -47,8 +47,15 @@ func init() {
 }
 
 func anchoreRequest(path string, bodyParams map[string]string, method string) ([]byte, error) {
-	username := anchoreConfig.Token
-	password := ""
+	var username, password string
+	if anchoreConfig.Token != "" {
+		username = anchoreConfig.Token
+		password = ""
+	} else {
+		username = anchoreConfig.User
+		password = anchoreConfig.Password
+	}
+
 	anchoreEngineURL := anchoreConfig.EndpointURL
 	fullURL := anchoreEngineURL + path
 

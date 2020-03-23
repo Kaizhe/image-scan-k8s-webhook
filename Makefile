@@ -3,7 +3,10 @@
 IMG ?= docker.io/sysdig/sysdig-image-scanning-trigger
 VERSION := $(shell cat version)
 
-all: test manager
+all: deps test manager
+
+deps:
+	dep ensure
 
 # Run tests
 test: generate fmt vet manifests
@@ -51,6 +54,9 @@ docker-build:
 # Push the docker image
 docker-push:
 	docker push ${IMG}:${VERSION}
+	docker push ${IMG}:${VERSION}
+	docker tag ${IMG}:${VERSION} ${IMG}:latest
+	docker push ${IMG}:latest
 
 # delete images
 delete-images:
