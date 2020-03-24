@@ -7,8 +7,18 @@ type Check struct {
 }
 
 type Image struct {
-	ImageDigest string `json:"imageDigest"`
-	ImageStatus string `json:"image_status"`
+	ImageDigest    string        `json:"imageDigest"`
+	ImageStatus    string        `json:"image_status"`
+	AnalysisStatus string        `json:"analysis_status"`
+	ImageDetails   []ImageDetail `json:"image_detail"`
+}
+
+type ImageDetail struct {
+	Digest      string `json:"digest"`
+	FullDigetst string `json:"fulldigest"`
+	FullTag     string `json:"fulltag"`
+	Repo        string `json:"repo"`
+	Tag         string `json:"Repo"`
 }
 
 type SHAResult struct {
