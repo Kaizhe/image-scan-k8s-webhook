@@ -48,13 +48,9 @@ func init() {
 
 func anchoreRequest(path string, bodyParams map[string]string, method string) ([]byte, error) {
 	var username, password string
-	if anchoreConfig.Token != "" {
-		username = anchoreConfig.Token
-		password = ""
-	} else {
-		username = anchoreConfig.User
-		password = anchoreConfig.Password
-	}
+
+	username = anchoreConfig.User
+	password = anchoreConfig.Password
 
 	anchoreEngineURL := anchoreConfig.EndpointURL
 	fullURL := anchoreEngineURL + path
@@ -65,7 +61,7 @@ func anchoreRequest(path string, bodyParams map[string]string, method string) ([
 		log.Fatal(err)
 	}
 	req.SetBasicAuth(username, password)
-	log.Infof("Sending request to %s, with params %s", fullURL, bodyParams)
+	log.Infof("Sending request to %s, with params %s", fullURL, string(bodyParamJson))
 	req.Header.Add("Content-Type", "application/json")
 
 	resp, err := client.Do(req)
@@ -73,6 +69,8 @@ func anchoreRequest(path string, bodyParams map[string]string, method string) ([
 	if err != nil {
 		return nil, fmt.Errorf("failed to complete request to Anchore: %v", err)
 	}
+
+	defer resp.Body.Close()
 
 	bodyText, err := ioutil.ReadAll(resp.Body)
 
@@ -162,6 +160,8 @@ func getImage(imageRef string) (Image, error) {
 		return Image{}, fmt.Errorf("failed to unmarshal JSON from response: %v", err)
 	}
 
+	log.Info(images)
+
 	return images[0], nil
 }
 func getImageDigest(imageRef string) (string, error) {
@@ -169,6 +169,7 @@ func getImageDigest(imageRef string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	return image.ImageDigest, nil
 }
 
@@ -179,7 +180,7 @@ func waitForImageLoaded(image string) (digest string, err error) {
 	}
 	count := 0
 	digest, err = getImageDigest(image)
-	for err != nil && count < 5 {
+	for err != nil && count < 30 {
 		digest, err = getImageDigest(image)
 		time.Sleep(time.Second)
 		count++
