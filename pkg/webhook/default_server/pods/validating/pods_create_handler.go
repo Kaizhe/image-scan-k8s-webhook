@@ -19,10 +19,9 @@ package validating
 import (
 	"context"
 	"fmt"
-	"net/http"
-
 	"github.com/draios/internal-sysdig-labs/image-scan-k8s-webhook/pkg/webhook/default_server/pods/anchore"
 	"github.com/sirupsen/logrus"
+	"net/http"
 
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/runtime/inject"
@@ -55,18 +54,26 @@ type PodCreateHandler struct {
 func (h *PodCreateHandler) validatingPodFn(ctx context.Context, obj *corev1.Pod) (bool, string, error) {
 	// TODO(user): implement your admission logic
 	allowed := true
+
 	msg := "allowed to be admitted"
 
 	for _, container := range obj.Spec.Containers {
 		image := container.Image
 		log.Info("Checking image: " + image)
-		if !anchore.CheckImage(image) {
-			allowed = false
-			msg = fmt.Sprintf("Image failed policy check: %s", image)
-			log.Warning(msg)
-			return allowed, msg, nil
-		} else {
+
+		passed, err := anchore.CheckImage(image)
+
+		if passed == true {
+			allowed = true
 			log.Info("Image passed policy check: " + image)
+		} else {
+			if err != nil && !anchore.RejectIfTimeout {
+				allowed = true
+				msg = fmt.Sprintf("Image policy check timeout: %s and no reject on timeout", image)
+			} else {
+				msg = fmt.Sprintf("Image failed policy check: %s (error: %s)", image, err.Error())
+				log.Warning(msg)
+			}
 		}
 	}
 

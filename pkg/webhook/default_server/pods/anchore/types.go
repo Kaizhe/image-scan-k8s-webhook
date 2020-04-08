@@ -19,6 +19,7 @@ type ImageDetail struct {
 	FullTag     string `json:"fulltag"`
 	Repo        string `json:"repo"`
 	Tag         string `json:"Repo"`
+	Registry    string `json:"registry"`
 }
 
 type SHAResult struct {

@@ -9,6 +9,7 @@ import (
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"reflect"
 	"strings"
 	"time"
@@ -30,6 +31,10 @@ var (
 	errNotFound = "response from Anchore: 404"
 
 	log = logrus.New()
+
+	timeout = strings.ToLower(os.Getenv("REJECT_IF_TIMEOUT"))
+
+	RejectIfTimeout = true
 )
 
 func init() {
@@ -44,6 +49,11 @@ func init() {
 	if err != nil {
 		log.Fatalf("Unmarshal: %v", err)
 	}
+
+	if timeout == "false" || timeout == "no" || timeout == "n" {
+		RejectIfTimeout = false
+	}
+
 }
 
 func anchoreRequest(path string, bodyParams map[string]string, method string) ([]byte, error) {
@@ -83,7 +93,7 @@ func anchoreRequest(path string, bodyParams map[string]string, method string) ([
 	return bodyText, nil
 }
 
-func getStatus(digest string, tag string) bool {
+func getStatus(digest string, tag string) (bool, error) {
 	path := fmt.Sprintf("/images/%s/check?tag=%s&history=false&detail=false", digest, tag)
 	body, err := anchoreRequest(path, nil, "GET")
 
@@ -105,12 +115,12 @@ func getStatus(digest string, tag string) bool {
 	if err != nil && err.Error() == errNotFound && count == 3 {
 		// first time scanned image, return true
 		log.Warnf("image %s with tag %s has not been scanned.", digest, tag)
-		return true
+		return false, err
 	}
 
 	if err != nil {
 		log.Error(err)
-		return false
+		return false, err
 	}
 
 	ret := string(body)
@@ -123,13 +133,13 @@ func getStatus(digest string, tag string) bool {
 	err = json.Unmarshal(body, &result)
 	if err != nil {
 		log.Error(err)
-		return false
+		return false, err
 	}
 
 	foundStatus := findResult(result)
 
 	// Is this the easiest way to get this info?
-	return strings.ToLower(foundStatus) == "pass"
+	return strings.ToLower(foundStatus) == "pass", nil
 }
 
 func findResult(parsed_result []map[string]map[string][]SHAResult) string {
@@ -160,9 +170,39 @@ func getImage(imageRef string) (Image, error) {
 		return Image{}, fmt.Errorf("failed to unmarshal JSON from response: %v", err)
 	}
 
-	log.Info(images)
+	if len(images) == 0 {
+		return Image{}, fmt.Errorf("no images returned")
+	}
 
-	return images[0], nil
+	var imageIndex int
+	for idx, img := range images {
+		if strings.Contains(imageRef, "@") && strings.Contains(imageRef, ":") {
+			// compare with full digest
+			if img.ImageDetails[0].FullDigetst == imageRef {
+				imageIndex = idx
+				break
+			}
+		} else if !strings.Contains(imageRef, "@") && strings.Contains(imageRef, ":") {
+			// compare with full tag
+			if img.ImageDetails[0].FullTag == imageRef || strings.HasSuffix(img.ImageDetails[0].FullTag, imageRef) {
+				imageIndex = idx
+				break
+			}
+
+		} else {
+			// compare with repo
+			if img.ImageDetails[0].Repo == imageRef ||
+				strings.Join([]string{img.ImageDetails[0].Repo, img.ImageDetails[0].Registry}, "/") == imageRef {
+				imageIndex = idx
+				break
+			}
+		}
+	}
+
+	if imageIndex == len(images) {
+		return Image{}, fmt.Errorf("no images found")
+	}
+	return images[imageIndex], nil
 }
 func getImageDigest(imageRef string) (string, error) {
 	image, err := getImage(imageRef)
@@ -198,11 +238,11 @@ func addImage(image string) error {
 	return nil
 }
 
-func CheckImage(image string) bool {
+func CheckImage(image string) (bool, error) {
 	digest, err := waitForImageLoaded(image)
 	if err != nil {
 		log.Error(err)
-		return false
+		return false, err
 	}
 	return getStatus(digest, image)
 }
