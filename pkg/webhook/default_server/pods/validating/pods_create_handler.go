@@ -71,9 +71,14 @@ func (h *PodCreateHandler) validatingPodFn(ctx context.Context, obj *corev1.Pod)
 				allowed = true
 				msg = fmt.Sprintf("Image policy check timeout: %s and no reject on timeout", image)
 			} else {
-				msg = fmt.Sprintf("Image failed policy check: %s (error: %s)", image, err.Error())
-				log.Warning(msg)
+				allowed = false
+				if err != nil {
+					msg = fmt.Sprintf("Image failed policy check: %s (error: %s)", image, err.Error())
+				} else {
+					msg = fmt.Sprintf("Image failed policy check: %s ", image)
+				}
 			}
+			log.Warning(msg)
 		}
 	}
 
